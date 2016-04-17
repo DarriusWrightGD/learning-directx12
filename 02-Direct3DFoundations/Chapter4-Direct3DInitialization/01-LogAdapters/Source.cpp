@@ -63,7 +63,7 @@ void main()
 {
 	//allows you to generate DXGI objects? at least that is what the documentation says.
 	//also not sure why the fourth version works but not the first 
-	IDXGIFactory4* factory = NULL;
+	IDXGIFactory4* factory = nullptr;
 	HRESULT hr= CreateDXGIFactory1(IID_PPV_ARGS(&factory));
 
 	if (FAILED(hr))
