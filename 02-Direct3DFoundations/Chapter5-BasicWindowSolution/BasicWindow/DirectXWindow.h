@@ -27,7 +27,7 @@ protected:
 	{
 		return CD3DX12_CPU_DESCRIPTOR_HANDLE(
 			rtvHeap->GetCPUDescriptorHandleForHeapStart(),
-			currentBuffer,
+			currentBackBuffer,
 			rtvDescriptorSize
 			);
 	}
@@ -65,7 +65,7 @@ protected:
 	ComPtr<IDXGISwapChain1> swapChain = nullptr;
 	ComPtr<ID3D12Resource> swapChainBuffer[swapChainBufferCount];
 	DXGI_FORMAT backbufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	int currentBuffer = 0;
+	int currentBackBuffer = 0;
 	UINT64 currentFence = 0;
 
 

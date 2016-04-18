@@ -145,6 +145,7 @@
   <ItemGroup>
     <ClCompile Include="DirectXDemo.cpp" />
     <ClCompile Include="DirectXWindow.cpp" />
+    <ClCompile Include="DXHelper.cpp" />
     <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>

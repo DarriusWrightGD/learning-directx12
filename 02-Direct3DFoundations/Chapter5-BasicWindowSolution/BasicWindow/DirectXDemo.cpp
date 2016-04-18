@@ -32,8 +32,10 @@ void DirectXDemo::Draw(const GameTimer & timer)
 
 	commandList->RSSetViewports(1, &viewPort);
 	commandList->RSSetScissorRects(1, &scissorRect);
-
-	const float color[4] = { 0.6f,0.2f,0.4f,1.0f };
+	
+	float cosTime = cosf(timer.TotalTime());
+	float sinTime = sinf(timer.TotalTime());
+	float color[4] = { 0.6f * cosTime,0.8f * sinTime,0.4f,1.0f };
 	commandList->ClearRenderTargetView(
 		CurrentBackBufferView(),
 		color, 0, nullptr);
@@ -53,7 +55,7 @@ void DirectXDemo::Draw(const GameTimer & timer)
 	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
 	ThrowIfFailed(swapChain->Present(0, 0));
-	currentBuffer = (currentBuffer + 1) % swapChainBufferCount;
+	currentBackBuffer = (currentBackBuffer + 1) % swapChainBufferCount;
 
 	FlushCommandQueue();
 }

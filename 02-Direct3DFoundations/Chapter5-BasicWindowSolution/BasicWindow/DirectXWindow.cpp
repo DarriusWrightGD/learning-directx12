@@ -94,48 +94,48 @@ bool DirectXWindow::InitializeDirectX()
 }
 #endif
 
-ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&factory)));
-auto hardwareResult = D3D12CreateDevice(nullptr, //default adapter
-	D3D_FEATURE_LEVEL_11_0, // why 11?
-	IID_PPV_ARGS(&device)
-	);
+	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&factory)));
+	auto hardwareResult = D3D12CreateDevice(nullptr, //default adapter
+		D3D_FEATURE_LEVEL_11_0, // why 11?
+		IID_PPV_ARGS(&device)
+		);
 
-//Fall back to warp device (WARP - Windows Advanced Rasterization Platform)
-if (FAILED(hardwareResult))
-{
-	ComPtr<IDXGIAdapter> warpAdapter;
-	ThrowIfFailed(factory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)));
-	ThrowIfFailed(D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)));
-}
+	//Fall back to warp device (WARP - Windows Advanced Rasterization Platform)
+	if (FAILED(hardwareResult))
+	{
+		ComPtr<IDXGIAdapter> warpAdapter;
+		ThrowIfFailed(factory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)));
+		ThrowIfFailed(D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)));
+	}
 
-//initialize the fence for CPU/GPU syncronization
-ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
+	//initialize the fence for CPU/GPU syncronization
+	ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
 
-rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-dsvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-cbvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	dsvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	cbvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
-msQualityLevels.Format = backbufferFormat;
-msQualityLevels.SampleCount = 4;
-msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
-msQualityLevels.NumQualityLevels = 0;
-ThrowIfFailed(device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
-m4xMsaaQuality = msQualityLevels.NumQualityLevels;
+	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
+	msQualityLevels.Format = backbufferFormat;
+	msQualityLevels.SampleCount = 4;
+	msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+	msQualityLevels.NumQualityLevels = 1;
+	ThrowIfFailed(device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
+	m4xMsaaQuality = msQualityLevels.NumQualityLevels;
 
-//4x sampling should always be avaiable therefore the assert
-assert(m4xMsaaQuality > 0 && "Unexpected quality levels");
+	//4x sampling should always be avaiable therefore the assert
+	assert(m4xMsaaQuality > 0 && "Unexpected quality levels");
 
-InitializeCommandObjects();
-CreateSwapChain();
-InitializeDescriptorHeaps();
-CreateRenderTargetView();
-//open command list?
-CreateDepthStencilView();
-SetupViewport();
-SetupScissorRectangles();
+	InitializeCommandObjects();
+	CreateSwapChain();
+	InitializeDescriptorHeaps();
+	CreateRenderTargetView();
+	//open command list?
+	CreateDepthStencilView();
+	SetupViewport();
+	SetupScissorRectangles();
 
-return true;
+	return true;
 }
 
 void DirectXWindow::InitializeCommandObjects()
@@ -218,7 +218,6 @@ void DirectXWindow::CreateRenderTargetView()
 	}
 }
 
-
 void DirectXWindow::CreateDepthStencilView()
 {
 	D3D12_RESOURCE_DESC depthStencilDesc;
@@ -255,7 +254,6 @@ void DirectXWindow::CreateDepthStencilView()
 
 void DirectXWindow::SetupViewport()
 {
-
 	viewPort.TopLeftX = 0;
 	viewPort.TopLeftY = 0;
 	viewPort.Width = static_cast<float>(width);
@@ -303,7 +301,6 @@ int DirectXWindow::Run()
 		}
 		else
 		{
-			//do da game stuffs
 			timer.Tick();
 
 			if (appPaused)
@@ -351,7 +348,6 @@ LRESULT DirectXWindow::MessageProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 		return 0;
 	case WM_MENUCHAR:
 		return MAKELRESULT(0, MNC_CLOSE);
-
 	case WM_GETMINMAXINFO:
 		((MINMAXINFO*)lParam)->ptMinTrackSize.x = 300;
 		((MINMAXINFO*)lParam)->ptMinTrackSize.y = 300;
@@ -384,7 +380,7 @@ LRESULT DirectXWindow::MessageProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 
 ID3D12Resource * DirectXWindow::CurrentBackBuffer() const
 {
-	return swapChainBuffer[currentBuffer].Get();
+	return swapChainBuffer[currentBackBuffer].Get();
 }
 
 float DirectXWindow::AspectRatio()
@@ -437,7 +433,7 @@ void DirectXWindow::OnResize()
 		backbufferFormat,
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
 		));
-	currentBuffer = 0;
+	currentBackBuffer = 0;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
 	for (UINT i = 0; i < swapChainBufferCount; i++)

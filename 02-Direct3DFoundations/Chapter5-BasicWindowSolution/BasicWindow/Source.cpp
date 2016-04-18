@@ -21,9 +21,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 
 		return window->Run();
 	}
-	catch (std::exception & e)
+	catch (DxException & e)
 	{
-		MessageBox(nullptr, L"There was an issue", L"Failed", MB_OK);
+		MessageBox(nullptr, e.ToString().c_str(), L"Failed", MB_OK);
 		return 0;
 	}
 }
