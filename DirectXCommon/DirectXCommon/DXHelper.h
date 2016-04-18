@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <string>
 #include <exception>
+#include "Export.h"
 
 inline std::wstring AnsiToWString(const std::string& str)
 {
@@ -13,13 +14,13 @@ inline std::wstring AnsiToWString(const std::string& str)
 class DxException
 {
 public:
-	DxException() = default;
-	DxException(HRESULT hr, const std::wstring & functionName, const std::wstring & filename, int lineNumber);
-	std::wstring ToString();
-	HRESULT GetErrorCode();
-	std::wstring GetFunctionName();
-	std::wstring GetFileName();
-	int GetLineNumber();
+	ENGINE_SHARED DxException() = default;
+	ENGINE_SHARED DxException(HRESULT hr, const std::wstring & functionName, const std::wstring & filename, int lineNumber);
+	ENGINE_SHARED std::wstring ToString();
+	ENGINE_SHARED HRESULT GetErrorCode();
+	ENGINE_SHARED std::wstring GetFunctionName();
+	ENGINE_SHARED std::wstring GetFileName();
+	ENGINE_SHARED int GetLineNumber();
 private:
 	HRESULT errorCode = S_OK;
 	std::wstring functionName;

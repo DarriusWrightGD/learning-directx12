@@ -9,21 +9,22 @@
 #include <cassert>
 #include "GameTimer.h"
 #include <string>
+#include "Export.h"
 
 using namespace Microsoft::WRL;
 
 class DirectXWindow
 {
 public:
-	DirectXWindow(HINSTANCE instanceHandle);
-	virtual ~DirectXWindow();
-	bool Initialize();
-	int Run();
-	virtual LRESULT MessageProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	ENGINE_SHARED DirectXWindow(HINSTANCE instanceHandle);
+	ENGINE_SHARED virtual ~DirectXWindow();
+	ENGINE_SHARED bool Initialize();
+	ENGINE_SHARED int Run();
+	ENGINE_SHARED virtual LRESULT MessageProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
 protected:
-	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const
+	ENGINE_SHARED D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const
 	{
 		return CD3DX12_CPU_DESCRIPTOR_HANDLE(
 			rtvHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -32,22 +33,22 @@ protected:
 			);
 	}
 
-	D3D12_CPU_DESCRIPTOR_HANDLE DepthBufferStencilView() const
+	ENGINE_SHARED D3D12_CPU_DESCRIPTOR_HANDLE DepthBufferStencilView() const
 	{
 		return dsvHeap->GetCPUDescriptorHandleForHeapStart();
 	}
 
-	ID3D12Resource* CurrentBackBuffer()const;
+	ENGINE_SHARED ID3D12Resource* CurrentBackBuffer()const;
 
-	virtual void Init() = 0;
-	virtual void Update(const GameTimer & timer) = 0;
-	virtual void Draw(const GameTimer & timer) = 0;
-	float AspectRatio();
-	void FlushCommandQueue();
-	virtual void OnResize();
-	virtual void OnMouseUp(WPARAM state, int x, int y) {}
-	virtual void OnMouseDown(WPARAM state, int x, int y) {}
-	virtual void OnMouseMove(WPARAM state, int x, int y) {}
+	ENGINE_SHARED virtual void Init() = 0;
+	ENGINE_SHARED virtual void Update(const GameTimer & timer) = 0;
+	ENGINE_SHARED virtual void Draw(const GameTimer & timer) = 0;
+	ENGINE_SHARED float AspectRatio();
+	ENGINE_SHARED void FlushCommandQueue();
+	ENGINE_SHARED virtual void OnResize();
+	ENGINE_SHARED virtual void OnMouseUp(WPARAM state, int x, int y) {}
+	ENGINE_SHARED virtual void OnMouseDown(WPARAM state, int x, int y) {}
+	ENGINE_SHARED virtual void OnMouseMove(WPARAM state, int x, int y) {}
 
 	HWND mainWindowHandle = 0;
 	HINSTANCE applicationHandle = 0;
