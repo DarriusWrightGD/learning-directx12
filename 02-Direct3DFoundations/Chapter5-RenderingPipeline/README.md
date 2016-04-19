@@ -38,13 +38,23 @@ Tessellation allows us to subdivide the triangles of a mesh and add new triangle
 - Level of detail (LOD) - triangles near the camera are tessellated to add more detail where as those that are far away will not be rendered at such a high quality.
 - Low poly count in memory
 - Perform animation and physics on the low-poly model and save Tessellation for rendering
+
 ## Domain Shader Stage (TBC.)
+
 ## Geometry Shader Stage
+
 In the geometry shader stage we can literally create and destroy geometry based on conditions.
+
 ### Stream Output Stage (TBC.)
+
 ## Rasterizer Stage
+
 At this stage we are computing pixel colors from projected triangles.
+
 ## Pixel Shader Stage
+
 The pixel shader is computed for each pixel fragment and can do things as simple as rendering a simple color, or as complicated as ray tracing on the gpu. Or some times even more complicated than that.
+
 ## Output Merger Stage
+
 Every fragment that has made it passed the depth, stencil, and beyond being rejected has now graduated to this point to become a pixel and be rendered to the back buffer.
