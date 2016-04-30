@@ -1,5 +1,5 @@
 #pragma once
-#include "DirectXWindow.h"
+#include <Window\DirectXWindow.h>
 class DirectXDemo : public DirectXWindow
 {
 public:
