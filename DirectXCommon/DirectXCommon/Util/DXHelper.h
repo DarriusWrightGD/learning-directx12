@@ -2,7 +2,7 @@
 #include <Windows.h>
 #include <string>
 #include <exception>
-#include "Export.h"
+#include <Export.h>
 
 inline std::wstring AnsiToWString(const std::string& str)
 {

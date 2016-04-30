@@ -86,13 +86,13 @@ bool DirectXWindow::InitializeWindow()
 
 bool DirectXWindow::InitializeDirectX()
 {
-#if defined(DEBUG) || defined(_DEBUG)
-{
-	ComPtr<ID3D12Debug> debugController;
-	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
-	debugController->EnableDebugLayer();
-}
-#endif
+//#if defined(DEBUG) || defined(_DEBUG)
+//{
+//	ComPtr<ID3D12Debug> debugController;
+//	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+//	debugController->EnableDebugLayer();
+//}
+//#endif
 
 	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&factory)));
 	auto hardwareResult = D3D12CreateDevice(nullptr, //default adapter
@@ -154,6 +154,33 @@ void DirectXWindow::InitializeCommandObjects()
 
 void DirectXWindow::CreateSwapChain()
 {
+
+	// Release the previous swapchain we will be recreating.
+	swapChain.Reset();
+
+	DXGI_SWAP_CHAIN_DESC sd;
+	sd.BufferDesc.Width = width;
+	sd.BufferDesc.Height = height;
+	sd.BufferDesc.RefreshRate.Numerator = 60;
+	sd.BufferDesc.RefreshRate.Denominator = 1;
+	sd.BufferDesc.Format = backbufferFormat;
+	sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	sd.SampleDesc.Count =  1;
+	sd.SampleDesc.Quality = 0;
+	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	sd.BufferCount = swapChainBufferCount;
+	sd.OutputWindow = mainWindowHandle;
+	sd.Windowed = true;
+	sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+	// Note: Swap chain uses queue to perform flush.
+	ThrowIfFailed(factory->CreateSwapChain(
+		commandQueue.Get(),
+		&sd,
+		swapChain.GetAddressOf()));
+
 	//DXGI_SWAP_CHAIN_DESC chainDesc = {};
 	//chainDesc.BufferDesc.Width = width;
 	//chainDesc.BufferDesc.Height = height;
@@ -171,7 +198,7 @@ void DirectXWindow::CreateSwapChain()
 	//chainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 	//ThrowIfFailed(factory->CreateSwapChain(commandQueue.Get(), &chainDesc, swapChain.GetAddressOf()));
 
-	DXGI_SWAP_CHAIN_DESC1 chainDesc = {};
+	/*DXGI_SWAP_CHAIN_DESC1 chainDesc = {};
 	chainDesc.Width = width;
 	chainDesc.Height = height;
 	chainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -185,13 +212,13 @@ void DirectXWindow::CreateSwapChain()
 	chainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	chainDesc.Flags = 0;
 
-	ThrowIfFailed(factory->CreateSwapChainForHwnd(commandQueue.Get(), mainWindowHandle, &chainDesc, nullptr, nullptr, swapChain.GetAddressOf()));
+	ThrowIfFailed(factory->CreateSwapChainForHwnd(commandQueue.Get(), mainWindowHandle, &chainDesc, nullptr, nullptr, swapChain.GetAddressOf()));*/
 }
 
 void DirectXWindow::InitializeDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-	rtvHeapDesc.NumDescriptors = 2;
+	rtvHeapDesc.NumDescriptors = swapChainBufferCount;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	rtvHeapDesc.NodeMask = 0;

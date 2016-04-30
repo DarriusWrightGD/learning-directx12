@@ -1,15 +1,15 @@
 #pragma once
-#include "DXHelper.h"
+#include <Util\DXHelper.h>
 #include <wrl.h>
 #include <d3d12.h>
-#include "d3dx12.h"
+#include <d3dx12.h>
 #include <dxgi1_4.h>
 #include <dxgidebug.h>
 
 #include <cassert>
-#include "GameTimer.h"
+#include <Util\GameTimer.h>
 #include <string>
-#include "Export.h"
+#include <Export.h>
 
 using namespace Microsoft::WRL;
 
@@ -63,7 +63,7 @@ protected:
 
 
 	const static int swapChainBufferCount = 2;
-	ComPtr<IDXGISwapChain1> swapChain = nullptr;
+	ComPtr<IDXGISwapChain> swapChain = nullptr;
 	ComPtr<ID3D12Resource> swapChainBuffer[swapChainBufferCount];
 	DXGI_FORMAT backbufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	int currentBackBuffer = 0;
