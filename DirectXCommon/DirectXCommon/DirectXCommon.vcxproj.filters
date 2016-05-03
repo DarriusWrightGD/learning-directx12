@@ -42,7 +42,7 @@
     <ClInclude Include="Util\HelperMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MeshGeometry.h">
+    <ClInclude Include="Geometry\MeshGeometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -59,10 +59,7 @@
     <ClCompile Include="Util\DxUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Util\UploadBuffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MeshGeometry.cpp">
+    <ClCompile Include="Geometry\MeshGeometry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

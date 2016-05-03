@@ -31,6 +31,7 @@ bool DirectXWindow::Initialize()
 {
 	bool success = InitializeWindow() && InitializeDirectX();
 	if (success) Init();
+	OnResize();
 	return success;
 }
 

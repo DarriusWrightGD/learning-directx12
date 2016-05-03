@@ -5,6 +5,10 @@ using namespace DirectX;
 
 struct BasicVertex
 {
+	BasicVertex()
+	{
+		
+	}
 	BasicVertex(XMFLOAT3 position, XMFLOAT3 color) : position(position), color(color)
 	{
 		

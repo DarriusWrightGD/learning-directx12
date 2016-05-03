@@ -57,7 +57,6 @@ HelloRender::~HelloRender()
 //check
 void HelloRender::Init()
 {
-	OnResize();
 	ThrowIfFailed(commandListAllocator->Reset());
 	ThrowIfFailed(commandList->Reset(commandListAllocator.Get(), nullptr));
 

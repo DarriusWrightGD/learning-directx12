@@ -2,7 +2,7 @@
 #include <Window\DirectXWindow.h>
 #include <DirectXMath.h>
 #include <Util\UploadBuffer.h>
-#include <MeshGeometry.h>
+#include <Geometry/MeshGeometry.h>
 #include "ObjectConstants.h"
 #include <memory>
 #include <vector>
