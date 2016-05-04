@@ -59,6 +59,8 @@ void ShapesDemo::Update(const GameTimer& timer)
 	mCurrentFrameResourceIndex = (mCurrentFrameResourceIndex + 1) % mNumberOfFrameResources;
 	mCurrentFrameResource = mFrameResources[mCurrentFrameResourceIndex].get();
 
+	//Check if the GPU has finished processing commands up until this point,
+	//if not wait until the GPU has completed commands at this fence point
 	if (mCurrentFrameResource->fence != 0 && fence->GetCompletedValue() < mCurrentFrameResource->fence)
 	{
 		HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
@@ -76,7 +78,13 @@ void ShapesDemo::Draw(const GameTimer& tinmer)
 	auto cmdListAllocator = mCurrentFrameResource->commandListAllocator;
 
 	ThrowIfFailed(cmdListAllocator->Reset());
-	auto * pso = mIsWireFrame ? mPSOs["opaque_wireframe"].Get() : mPSOs["opaque"].Get();
+
+	auto * pso = mPSOs["opaque"].Get();
+
+	if(mIsWireFrame)
+	{
+		pso = mPSOs["opaque_wireframe"].Get();
+	}
 
 	ThrowIfFailed(commandList->Reset(cmdListAllocator.Get(), pso));
 
@@ -480,17 +488,17 @@ void ShapesDemo::BuildRenderItems()
 void ShapesDemo::UpdateObjectCBs(const GameTimer & timer)
 {
 	auto currentObjectCB = mCurrentFrameResource->objectCB.get();
-	for(auto& e : mAllRenderItems)
+	for(auto& renderItem : mAllRenderItems)
 	{
-		if(e->NumberOfFramesDirty > 0)
+		if(renderItem->NumberOfFramesDirty > 0)
 		{
-			XMMATRIX world = XMLoadFloat4x4(&e->World);
+			XMMATRIX world = XMLoadFloat4x4(&renderItem->World);
 
 			ObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
 
-			currentObjectCB->CopyData(e->ObjectCBIndex, objConstants);
-			e->NumberOfFramesDirty--;
+			currentObjectCB->CopyData(renderItem->ObjectCBIndex, objConstants);
+			renderItem->NumberOfFramesDirty--;
 		}
 	}
 }

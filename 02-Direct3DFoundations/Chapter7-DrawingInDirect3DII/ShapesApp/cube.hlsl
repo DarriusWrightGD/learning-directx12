@@ -37,8 +37,10 @@ VertexOut VS(VertexIn vertexIn)
 {
 	VertexOut vertexOut;
 
-	float4x4 wvp = mul(world,viewProjection);
-	vertexOut.position= mul(float4(vertexIn.position,1.0f), wvp);
+	//float4x4 wvp = mul(world,viewProjection);
+	//vertexOut.position= mul(float4(vertexIn.position,1.0f), wvp);
+	float4 pos = mul(float4(vertexIn.position,1.0f), world);
+	vertexOut.position = mul(pos,viewProjection);
 	vertexOut.color = float4(vertexIn.color,1.0f);
 
 	return vertexOut;

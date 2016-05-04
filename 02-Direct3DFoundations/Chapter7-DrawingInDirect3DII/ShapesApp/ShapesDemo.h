@@ -39,7 +39,7 @@ private:
 
 
 	//Frame resource 
-	static const int mNumberOfFrameResources = 3;
+	static const int mNumberOfFrameResources = 5;
 	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 	FrameResource* mCurrentFrameResource = nullptr;
 	int mCurrentFrameResourceIndex = 0;
