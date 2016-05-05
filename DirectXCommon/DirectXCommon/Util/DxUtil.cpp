@@ -15,7 +15,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DxUtil::CreateDefaultBuffer(
 	UINT64 byteSize,
 	Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer)
 
-//ComPtr<ID3D12Resource> DxUtil::CreateDefaultBuffer(ID3D12Device * device,
+//ComPtr<ID3D12Resource> DxUtil::CreateDefaultBuffer(ID3D12Device * mDevice,
 	//ID3D12GraphicsCommandList * commandList, const void * data, UINT size, ComPtr<ID3D12Resource>& uploadBuffer)
 {
 	ComPtr<ID3D12Resource> defaultBuffer;

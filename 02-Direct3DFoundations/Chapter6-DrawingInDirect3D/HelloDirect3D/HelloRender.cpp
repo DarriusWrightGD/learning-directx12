@@ -44,9 +44,9 @@
 
 HelloRender::HelloRender(HINSTANCE instanceHandle) : DirectXWindow(instanceHandle)
 {
-	XMStoreFloat4x4(&world, XMMatrixIdentity());
-	XMStoreFloat4x4(&view, XMMatrixIdentity());
-	XMStoreFloat4x4(&projection, XMMatrixIdentity());
+	XMStoreFloat4x4(&mWorld, XMMatrixIdentity());
+	XMStoreFloat4x4(&mView, XMMatrixIdentity());
+	XMStoreFloat4x4(&mProjection, XMMatrixIdentity());
 }
 
 
@@ -57,8 +57,8 @@ HelloRender::~HelloRender()
 //check
 void HelloRender::Init()
 {
-	ThrowIfFailed(commandListAllocator->Reset());
-	ThrowIfFailed(commandList->Reset(commandListAllocator.Get(), nullptr));
+	ThrowIfFailed(mCommandListAllocator->Reset());
+	ThrowIfFailed(mCommandList->Reset(mCommandListAllocator.Get(), nullptr));
 
 	BuildDescriptorHeaps();
 	BuildConstantBuffers();
@@ -69,11 +69,11 @@ void HelloRender::Init()
 
 
 	//close the command list to execute the commands
-	ThrowIfFailed(commandList->Close());
+	ThrowIfFailed(mCommandList->Close());
 
 	//execute the commands from the command list
-	ID3D12CommandList * commandLists[] = { commandList.Get() };
-	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+	ID3D12CommandList * commandLists[] = { mCommandList.Get() };
+	mCommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
 	// make sure the command queue is done
 	FlushCommandQueue();
@@ -82,12 +82,12 @@ void HelloRender::Init()
 
 void HelloRender::BuildDescriptorHeaps()
 {
-	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	cbvHeapDesc.NodeMask = 0;
-	cbvHeapDesc.NumDescriptors = 1;
+	mCbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	mCbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	mCbvHeapDesc.NodeMask = 0;
+	mCbvHeapDesc.NumDescriptors = 1;
 
-	device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&cbvHeap));
+	mDevice->CreateDescriptorHeap(&mCbvHeapDesc, IID_PPV_ARGS(&mCbvHeap));
 }
 
 
@@ -96,11 +96,11 @@ void HelloRender::BuildConstantBuffers()
 	//this will supply our shader with the wvp matrix
 
 	//create an upload buffer
-	objectConstantsCB = std::make_unique<UploadBuffer<ObjectConstants>>(device.Get(), 1, true);
+	mObjectConstantsCB = std::make_unique<UploadBuffer<ObjectConstants>>(mDevice.Get(), 1, true);
 	
 	//get a size that is a multiple of 256
 	auto objectCBSize = DxUtil::GetConstantBufferPadding(sizeof(ObjectConstants));
-	auto cbAddress = objectConstantsCB->Resource()->GetGPUVirtualAddress();
+	auto cbAddress = mObjectConstantsCB->Resource()->GetGPUVirtualAddress();
 
 	auto boxCBIndex = 0;
 	cbAddress += boxCBIndex * objectCBSize;
@@ -110,7 +110,7 @@ void HelloRender::BuildConstantBuffers()
 	cbvDesc.SizeInBytes = objectCBSize;
 
 	//create the contstant buffer
-	device->CreateConstantBufferView(&cbvDesc, cbvHeap->GetCPUDescriptorHandleForHeapStart());
+	mDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
 void HelloRender::BuildRootSignature()
@@ -139,7 +139,7 @@ void HelloRender::BuildRootSignature()
 
 	ThrowIfFailed(hr);
 
-	ThrowIfFailed(device->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
+	ThrowIfFailed(mDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
 }
 
 void HelloRender::BuildShadersAndInputLayout()
@@ -150,7 +150,7 @@ void HelloRender::BuildShadersAndInputLayout()
 
 	for (auto i = 0; i < _countof(BasicVertexDescription); i++)
 	{
-		inputLayout.push_back(BasicVertexDescription[i]);
+		mInputLayout.push_back(BasicVertexDescription[i]);
 	}
 }
 
@@ -192,27 +192,27 @@ void HelloRender::BuildBoxGeometry()
 	const auto vbByteSize = static_cast<UINT>(vertices.size()) * sizeof(BasicVertex);
 	const auto ibByteSize = static_cast<UINT>(indices.size()) * sizeof(std::uint16_t);
 
-	boxGeo = std::make_unique<MeshGeometry>();
-	boxGeo->Name = "boxGeo";
+	mBoxGeo = std::make_unique<MeshGeometry>();
+	mBoxGeo->Name = "mBoxGeo";
 
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &boxGeo->VertexBufferCPU));
-	CopyMemory(boxGeo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &mBoxGeo->VertexBufferCPU));
+	CopyMemory(mBoxGeo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
 
 
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &boxGeo->IndexBufferCPU));
-	CopyMemory(boxGeo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &mBoxGeo->IndexBufferCPU));
+	CopyMemory(mBoxGeo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
 	//how to create a buffer for vertices
-	boxGeo->VertexBufferGPU = DxUtil::CreateDefaultBuffer(device.Get(), commandList.Get(), vertices.data(), vbByteSize, boxGeo->VertexBufferUploader);
+	mBoxGeo->VertexBufferGPU = DxUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, mBoxGeo->VertexBufferUploader);
 
 
-	boxGeo->IndexBufferGPU = DxUtil::CreateDefaultBuffer(device.Get(), commandList.Get(), indices.data(), ibByteSize, boxGeo->IndexBufferUploader);
+	mBoxGeo->IndexBufferGPU = DxUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, mBoxGeo->IndexBufferUploader);
 
 
-	boxGeo->VertexBufferByteSize = vbByteSize;
-	boxGeo->VertexByteStride = sizeof(BasicVertex);
-	boxGeo->IndexBufferByteSize = ibByteSize;
-	boxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	mBoxGeo->VertexBufferByteSize = vbByteSize;
+	mBoxGeo->VertexByteStride = sizeof(BasicVertex);
+	mBoxGeo->IndexBufferByteSize = ibByteSize;
+	mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
 
 	//to bind this data to the pipeline we will need a vertex buffer view 
 
@@ -221,7 +221,7 @@ void HelloRender::BuildBoxGeometry()
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
-	boxGeo->drawArgs["box"] = submesh;
+	mBoxGeo->drawArgs["box"] = submesh;
 }
 
 void HelloRender::BuildPSO()
@@ -229,8 +229,8 @@ void HelloRender::BuildPSO()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
 	//what does zero memory do that {} cannot?
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	psoDesc.InputLayout = { inputLayout.data(), static_cast<UINT>(inputLayout.size()) };
-	psoDesc.pRootSignature = rootSignature.Get();
+	psoDesc.InputLayout = { mInputLayout.data(), static_cast<UINT>(mInputLayout.size()) };
+	psoDesc.pRootSignature = mRootSignature.Get();
 	psoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(mVsByteCode->GetBufferPointer()),
@@ -252,19 +252,19 @@ void HelloRender::BuildPSO()
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
-	psoDesc.RTVFormats[0] = backbufferFormat;
+	psoDesc.RTVFormats[0] = mBackBufferFormat;
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
-	psoDesc.DSVFormat = depthStencilFormat;
-	ThrowIfFailed(device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso)));
+	psoDesc.DSVFormat = mDepthStencilFormat;
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPso)));
 }
 
 //check
 void HelloRender::Update(const GameTimer & timer)
 {
-	float x = radius * sinf(phi) * cosf(theta);
-	float z = radius * sinf(phi) * sinf(theta);
-	float y = radius * cosf(phi);
+	float x = mRadius * sinf(mPhi) * cosf(mTheta);
+	float z = mRadius * sinf(mPhi) * sinf(mTheta);
+	float y = mRadius * cosf(mPhi);
 
 	//float x = 0;
 	//float y = 0;
@@ -275,72 +275,72 @@ void HelloRender::Update(const GameTimer & timer)
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	XMMATRIX v = XMMatrixLookAtLH(position, target, up);
-	XMStoreFloat4x4(&view, v);
+	XMStoreFloat4x4(&mView, v);
 
-	XMMATRIX w = XMLoadFloat4x4(&world);
-	XMMATRIX p = XMLoadFloat4x4(&projection);
+	XMMATRIX w = XMLoadFloat4x4(&mWorld);
+	XMMATRIX p = XMLoadFloat4x4(&mProjection);
 
 	XMMATRIX wvpMatrix = w * v * p;
 
 	ObjectConstants objectConstants;
 	//XMStoreFloat4x4(&objectConstants.worldViewProjection, XMMatrixTranspose(wvpMatrix));
-	XMStoreFloat4x4(&objectConstants.worldViewProjection, XMMatrixTranspose(wvpMatrix));
-	objectConstants.time = timer.TotalTime();
-	objectConstantsCB->CopyData(0, objectConstants);
+	XMStoreFloat4x4(&objectConstants.WorldViewProjection, XMMatrixTranspose(wvpMatrix));
+	objectConstants.Time = timer.TotalTime();
+	mObjectConstantsCB->CopyData(0, objectConstants);
 }
 
 //check
 void HelloRender::Draw(const GameTimer & timer)
 {
 	//be sure to reset the commandlist and allocator first before starting to store commands again
-	ThrowIfFailed(commandListAllocator->Reset());
+	ThrowIfFailed(mCommandListAllocator->Reset());
 	//be sure that if you want to actually render something that you use the pipeline state object here.
-	ThrowIfFailed(commandList->Reset(commandListAllocator.Get(), pso.Get()));
+	ThrowIfFailed(mCommandList->Reset(mCommandListAllocator.Get(), mPso.Get()));
 
 	//go from presenting the to rendering
 
 	//set the view port and scissor rects
-	commandList->RSSetViewports(1, &viewPort);
-	commandList->RSSetScissorRects(1, &scissorRect);
+	mCommandList->RSSetViewports(1, &mViewPort);
+	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 
 	float color[4] = { 0.1f,0.4f,0.7f * cosf(timer.TotalTime()),1.0f };
 	//clear the color and depth buffer
-	commandList->ClearRenderTargetView(CurrentBackBufferView(), color, 0, nullptr);
-	commandList->ClearDepthStencilView(DepthBufferStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), color, 0, nullptr);
+	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	//set the render targets
-	commandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthBufferStencilView());
+	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { cbvHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mCbvHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-	commandList->SetGraphicsRootSignature(rootSignature.Get());
+	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
-	commandList->IASetVertexBuffers(0, 1, &boxGeo->VertexBufferView());
-	commandList->IASetIndexBuffer(&boxGeo->IndexBufferView());
-	commandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	mCommandList->IASetVertexBuffers(0, 1, &mBoxGeo->VertexBufferView());
+	mCommandList->IASetIndexBuffer(&mBoxGeo->IndexBufferView());
+	mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	commandList->SetGraphicsRootDescriptorTable(0, cbvHeap->GetGPUDescriptorHandleForHeapStart());
+	mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
-	//auto& subMesh = boxGeo->drawArgs["box"];
-	commandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+	//auto& subMesh = mBoxGeo->drawArgs["box"];
+	mCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 
 	// switch from rendering to presenting
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 	//close the command list to execute the commands
-	ThrowIfFailed(commandList->Close());
+	ThrowIfFailed(mCommandList->Close());
 
 	//execute the commands from the command list
-	ID3D12CommandList * commandLists[] = { commandList.Get() };
-	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+	ID3D12CommandList * commandLists[] = { mCommandList.Get() };
+	mCommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
 	//present the back buffer
-	ThrowIfFailed(swapChain->Present(0, 0));
-	currentBackBuffer = (currentBackBuffer + 1) % swapChainBufferCount;
+	ThrowIfFailed(mSwapChain->Present(0, 0));
+	mCurrentBackBuffer = (mCurrentBackBuffer + 1) % SwapChainBufferCount;
 
 	// make sure the command queue is done
 	FlushCommandQueue();
@@ -350,34 +350,34 @@ void HelloRender::OnMouseMove(WPARAM state, int x, int y)
 {
 	if ((state & MK_LBUTTON) != 0)
 	{
-		float dx = XMConvertToRadians(0.25f*static_cast<float>(x - lastMousePosition.x));
-		float dy = XMConvertToRadians(0.25f*static_cast<float>(y - lastMousePosition.y));
+		float dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePosition.x));
+		float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePosition.y));
 
-		theta += dx;
-		phi += dy;
+		mTheta += dx;
+		mPhi += dy;
 
 
-		phi = clamp(phi, 0.1f, 3.14f);
+		mPhi = clamp(mPhi, 0.1f, 3.14f);
 	}
 	else if ((state & MK_RBUTTON) != 0)
 	{
-		float dx = 0.005f * static_cast<float>(x - lastMousePosition.x);
-		float dy = 0.005f * static_cast<float>(y - lastMousePosition.y);
+		float dx = 0.005f * static_cast<float>(x - mLastMousePosition.x);
+		float dy = 0.005f * static_cast<float>(y - mLastMousePosition.y);
 
-		radius += dx - dy;
-		radius = clamp(radius, 3.0f, 15.0f);
+		mRadius += dx - dy;
+		mRadius = clamp(mRadius, 3.0f, 15.0f);
 	}
 
-	lastMousePosition.x = static_cast<float>(x);
-	lastMousePosition.y = static_cast<float>(y);
+	mLastMousePosition.x = static_cast<float>(x);
+	mLastMousePosition.y = static_cast<float>(y);
 }
 
 void HelloRender::OnMouseDown(WPARAM state, int x, int y)
 {
-	lastMousePosition.x = x;
-	lastMousePosition.y = y;
+	mLastMousePosition.x = x;
+	mLastMousePosition.y = y;
 
-	SetCapture(mainWindowHandle);
+	SetCapture(mMainWindowHandle);
 }
 
 void HelloRender::OnMouseUp(WPARAM state, int x, int y)
@@ -390,7 +390,7 @@ void HelloRender::OnResize()
 	DirectXWindow::OnResize();
 	auto aspect = AspectRatio();
 	XMMATRIX p = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), aspect, 1.0f, 100.0f);
-	XMStoreFloat4x4(&projection, p);
+	XMStoreFloat4x4(&mProjection, p);
 }
 
 

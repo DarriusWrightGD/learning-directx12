@@ -30,10 +30,10 @@ public:
 	FrameResource& operator=(const FrameResource& rhs) = delete;
 	~FrameResource();
 
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandListAllocator;
-	std::unique_ptr<UploadBuffer<PassConstants>> passCB = nullptr;
-	std::unique_ptr<UploadBuffer<ObjectConstants>> objectCB = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CommandListAllocator;
+	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
+	std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
 
-	UINT64 fence=0;
+	UINT64 Fence=0;
 };
 

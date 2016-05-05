@@ -15,13 +15,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return window->MessageProc(hWnd, msg, wParam, lParam);
 }
 
-DirectXWindow::DirectXWindow(HINSTANCE instanceHandle) : applicationHandle(instanceHandle)
+DirectXWindow::DirectXWindow(HINSTANCE instanceHandle) : mApplicationHandle(instanceHandle)
 {
 }
 
 DirectXWindow::~DirectXWindow()
 {
-	if (device != nullptr)
+	if (mDevice != nullptr)
 	{
 		FlushCommandQueue();
 	}
@@ -43,7 +43,7 @@ bool DirectXWindow::InitializeWindow()
 	wc.lpfnWndProc = WndProc; // set the event handler 
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
-	wc.hInstance = applicationHandle; // window instance handle thing?
+	wc.hInstance = mApplicationHandle; // window instance handle thing?
 	wc.hIcon = LoadIcon(0, IDI_APPLICATION);// what other icons are there?
 	wc.hCursor = LoadCursor(0, IDC_CROSS);
 	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
@@ -60,28 +60,28 @@ bool DirectXWindow::InitializeWindow()
 	//calling create window to, you guessed it create the window. We will get a handle back 
 	// from the createwindow function.
 
-	mainWindowHandle = CreateWindow(
+	mMainWindowHandle = CreateWindow(
 		L"BasicWndClass",
-		mainWindowCaption.c_str(), // window name
+		mMainWindowCaption.c_str(), // window name
 		WS_OVERLAPPEDWINDOW, //what does this mean
 		100, //x
 		25, // y
-		width, // width
-		height, // height
+		mWidth, // mWidth
+		mHeight, // mHeight
 		nullptr, // no parent
 		nullptr, // no menu
-		applicationHandle, // app instance
+		mApplicationHandle, // app instance
 		nullptr // no extra creation information
 		);
 
-	if (mainWindowHandle == nullptr)
+	if (mMainWindowHandle == nullptr)
 	{
 		MessageBox(0, L"Create window failed...", 0, 0);
 		return false;
 	}
 
-	ShowWindow(mainWindowHandle, true);
-	UpdateWindow(mainWindowHandle);
+	ShowWindow(mMainWindowHandle, true);
+	UpdateWindow(mMainWindowHandle);
 	return true;
 }
 
@@ -95,33 +95,33 @@ bool DirectXWindow::InitializeDirectX()
 //}
 //#endif
 
-	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&factory)));
+	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mFactory)));
 	auto hardwareResult = D3D12CreateDevice(nullptr, //default adapter
 		D3D_FEATURE_LEVEL_11_0, // why 11?
-		IID_PPV_ARGS(&device)
+		IID_PPV_ARGS(&mDevice)
 		);
 
-	//Fall back to warp device (WARP - Windows Advanced Rasterization Platform)
+	//Fall back to warp mDevice (WARP - Windows Advanced Rasterization Platform)
 	if (FAILED(hardwareResult))
 	{
 		ComPtr<IDXGIAdapter> warpAdapter;
-		ThrowIfFailed(factory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)));
-		ThrowIfFailed(D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)));
+		ThrowIfFailed(mFactory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)));
+		ThrowIfFailed(D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&mDevice)));
 	}
 
-	//initialize the fence for CPU/GPU syncronization
-	ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
+	//initialize the mFence for CPU/GPU syncronization
+	ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
 
-	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	dsvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-	cbvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	mDsvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	mCbvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
-	msQualityLevels.Format = backbufferFormat;
+	msQualityLevels.Format = mBackBufferFormat;
 	msQualityLevels.SampleCount = 4;
 	msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
 	msQualityLevels.NumQualityLevels = 1;
-	ThrowIfFailed(device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
+	ThrowIfFailed(mDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
 	m4xMsaaQuality = msQualityLevels.NumQualityLevels;
 
 	//4x sampling should always be avaiable therefore the assert
@@ -144,50 +144,50 @@ void DirectXWindow::InitializeCommandObjects()
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	ThrowIfFailed(device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue)));
-	ThrowIfFailed(device->CreateCommandAllocator(queueDesc.Type, IID_PPV_ARGS(commandListAllocator.GetAddressOf())));
-	ThrowIfFailed(device->CreateCommandList(0, queueDesc.Type, commandListAllocator.Get(), nullptr, IID_PPV_ARGS(commandList.GetAddressOf())));
+	ThrowIfFailed(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
+	ThrowIfFailed(mDevice->CreateCommandAllocator(queueDesc.Type, IID_PPV_ARGS(mCommandListAllocator.GetAddressOf())));
+	ThrowIfFailed(mDevice->CreateCommandList(0, queueDesc.Type, mCommandListAllocator.Get(), nullptr, IID_PPV_ARGS(mCommandList.GetAddressOf())));
 
 	//You have to start off closed, this is because the first that we refer to the command list we will reset it. 
 	//The only way to reset it is if it is in a closed state.
-	commandList->Close();
+	mCommandList->Close();
 }
 
 void DirectXWindow::CreateSwapChain()
 {
 
 	// Release the previous swapchain we will be recreating.
-	swapChain.Reset();
+	mSwapChain.Reset();
 
 	DXGI_SWAP_CHAIN_DESC sd;
-	sd.BufferDesc.Width = width;
-	sd.BufferDesc.Height = height;
+	sd.BufferDesc.Width = mWidth;
+	sd.BufferDesc.Height = mHeight;
 	sd.BufferDesc.RefreshRate.Numerator = 60;
 	sd.BufferDesc.RefreshRate.Denominator = 1;
-	sd.BufferDesc.Format = backbufferFormat;
+	sd.BufferDesc.Format = mBackBufferFormat;
 	sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	sd.SampleDesc.Count =  1;
 	sd.SampleDesc.Quality = 0;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sd.BufferCount = swapChainBufferCount;
-	sd.OutputWindow = mainWindowHandle;
+	sd.BufferCount = SwapChainBufferCount;
+	sd.OutputWindow = mMainWindowHandle;
 	sd.Windowed = true;
 	sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
 	// Note: Swap chain uses queue to perform flush.
-	ThrowIfFailed(factory->CreateSwapChain(
-		commandQueue.Get(),
+	ThrowIfFailed(mFactory->CreateSwapChain(
+		mCommandQueue.Get(),
 		&sd,
-		swapChain.GetAddressOf()));
+		mSwapChain.GetAddressOf()));
 
 	//DXGI_SWAP_CHAIN_DESC chainDesc = {};
-	//chainDesc.BufferDesc.Width = width;
-	//chainDesc.BufferDesc.Height = height;
+	//chainDesc.BufferDesc.Width = mWidth;
+	//chainDesc.BufferDesc.Height = mHeight;
 	//chainDesc.BufferDesc.RefreshRate.Numerator = 60;
 	//chainDesc.BufferDesc.RefreshRate.Denominator = 1;
-	//chainDesc.BufferDesc.Format = backbufferFormat;
+	//chainDesc.BufferDesc.Format = mBackbufferFormat;
 	//chainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	//chainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	//chainDesc.SampleDesc.Count =  1;
@@ -197,11 +197,11 @@ void DirectXWindow::CreateSwapChain()
 	//chainDesc.Windowed = true;
 	//chainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	//chainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-	//ThrowIfFailed(factory->CreateSwapChain(commandQueue.Get(), &chainDesc, swapChain.GetAddressOf()));
+	//ThrowIfFailed(mFactory->CreateSwapChain(mCommandQueue.Get(), &chainDesc, mSwapChain.GetAddressOf()));
 
 	/*DXGI_SWAP_CHAIN_DESC1 chainDesc = {};
-	chainDesc.Width = width;
-	chainDesc.Height = height;
+	chainDesc.Width = mWidth;
+	chainDesc.Height = mHeight;
 	chainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	chainDesc.Stereo = FALSE;
 	chainDesc.SampleDesc.Count = 1;
@@ -213,18 +213,18 @@ void DirectXWindow::CreateSwapChain()
 	chainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	chainDesc.Flags = 0;
 
-	ThrowIfFailed(factory->CreateSwapChainForHwnd(commandQueue.Get(), mainWindowHandle, &chainDesc, nullptr, nullptr, swapChain.GetAddressOf()));*/
+	ThrowIfFailed(mFactory->CreateSwapChainForHwnd(mCommandQueue.Get(), mainWindowHandle, &chainDesc, nullptr, nullptr, mSwapChain.GetAddressOf()));*/
 }
 
 void DirectXWindow::InitializeDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-	rtvHeapDesc.NumDescriptors = swapChainBufferCount;
+	rtvHeapDesc.NumDescriptors = SwapChainBufferCount;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	rtvHeapDesc.NodeMask = 0;
 
-	ThrowIfFailed(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(rtvHeap.GetAddressOf())));
+	ThrowIfFailed(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
 	dsvHeapDesc.NumDescriptors = 1;
@@ -232,17 +232,17 @@ void DirectXWindow::InitializeDescriptorHeaps()
 	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	dsvHeapDesc.NodeMask = 0;
 
-	ThrowIfFailed(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(dsvHeap.GetAddressOf())));
+	ThrowIfFailed(mDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf())));
 }
 
 void DirectXWindow::CreateRenderTargetView()
 {
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
-	for (size_t i = 0; i < swapChainBufferCount; i++)
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
+	for (size_t i = 0; i < SwapChainBufferCount; i++)
 	{
-		ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(swapChainBuffer[i].GetAddressOf())));
-		device->CreateRenderTargetView(swapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
-		rtvHeapHandle.Offset(1, rtvDescriptorSize);
+		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(mSwapChainBuffer[i].GetAddressOf())));
+		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
+		rtvHeapHandle.Offset(1, mRtvDescriptorSize);
 	}
 }
 
@@ -251,48 +251,48 @@ void DirectXWindow::CreateDepthStencilView()
 	D3D12_RESOURCE_DESC depthStencilDesc;
 	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	depthStencilDesc.Alignment = 0;
-	depthStencilDesc.Width = width;
-	depthStencilDesc.Height = height;
+	depthStencilDesc.Width = mWidth;
+	depthStencilDesc.Height = mHeight;
 	depthStencilDesc.DepthOrArraySize = 1;
 	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.Format = depthStencilFormat;
+	depthStencilDesc.Format = mDepthStencilFormat;
 	depthStencilDesc.SampleDesc.Count = 1;
 	depthStencilDesc.SampleDesc.Quality = 0;
 	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
 	D3D12_CLEAR_VALUE optClear;
-	optClear.Format = depthStencilFormat;
+	optClear.Format = mDepthStencilFormat;
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
-	ThrowIfFailed(device->CreateCommittedResource(
+	ThrowIfFailed(mDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
 		&depthStencilDesc,
 		D3D12_RESOURCE_STATE_COMMON,
 		&optClear,
-		IID_PPV_ARGS(depthStencilBuffer.GetAddressOf())
+		IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())
 		));
 
-	device->CreateDepthStencilView(
-		depthStencilBuffer.Get(),
+	mDevice->CreateDepthStencilView(
+		mDepthStencilBuffer.Get(),
 		nullptr,
-		DepthBufferStencilView());
+		DepthStencilView());
 }
 
 void DirectXWindow::SetupViewport()
 {
-	viewPort.TopLeftX = 0;
-	viewPort.TopLeftY = 0;
-	viewPort.Width = static_cast<float>(width);
-	viewPort.Height = static_cast<float>(height);
-	viewPort.MinDepth = 0.0f;
-	viewPort.MaxDepth = 1.0f;
+	mViewPort.TopLeftX = 0;
+	mViewPort.TopLeftY = 0;
+	mViewPort.Width = static_cast<float>(mWidth);
+	mViewPort.Height = static_cast<float>(mHeight);
+	mViewPort.MinDepth = 0.0f;
+	mViewPort.MaxDepth = 1.0f;
 }
 
 void DirectXWindow::SetupScissorRectangles()
 {
-	scissorRect = { 0,0,width,height };
+	mScissorRect = { 0,0,mWidth,mHeight };
 }
 
 void DirectXWindow::CalculateFrameStats()
@@ -302,15 +302,15 @@ void DirectXWindow::CalculateFrameStats()
 
 	frameCount++;
 
-	if (timer.TotalTime() - timeElapsed >= 1.0f)
+	if (mTimer.TotalTime() - timeElapsed >= 1.0f)
 	{
 		float fps = (float)frameCount;
 		float mspf = 1000.0f / fps;
 
 		wstring fpsStr = to_wstring(fps);
 		wstring mspfStr = to_wstring(mspf);
-		wstring windowText = mainWindowCaption + L" fps: " + fpsStr + L" mspf: " + mspfStr;
-		SetWindowText(mainWindowHandle, windowText.c_str());
+		wstring windowText = mMainWindowCaption + L" fps: " + fpsStr + L" mspf: " + mspfStr;
+		SetWindowText(mMainWindowHandle, windowText.c_str());
 		frameCount = 0;
 		timeElapsed += 1.0f;
 	}
@@ -319,7 +319,7 @@ void DirectXWindow::CalculateFrameStats()
 int DirectXWindow::Run()
 {
 	MSG msg = { 0 };
-	timer.Reset();
+	mTimer.Reset();
 	while (msg.message != WM_QUIT)
 	{
 		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
@@ -329,17 +329,17 @@ int DirectXWindow::Run()
 		}
 		else
 		{
-			timer.Tick();
+			mTimer.Tick();
 
-			if (appPaused)
+			if (mAppPaused)
 			{
 				Sleep(100);
 			}
 			else
 			{
 				CalculateFrameStats();
-				Update(timer);
-				Draw(timer);
+				Update(mTimer);
+				Draw(mTimer);
 			}
 		}
 	}
@@ -354,24 +354,24 @@ LRESULT DirectXWindow::MessageProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 	case WM_ACTIVATE:
 		if (LOWORD(wParam) == WA_INACTIVE)
 		{
-			appPaused = true;
-			timer.Stop();
+			mAppPaused = true;
+			mTimer.Stop();
 		}
 		else
 		{
-			appPaused = false;
-			timer.Start();
+			mAppPaused = false;
+			mTimer.Start();
 		}
 		return 0;
 	case WM_ENTERSIZEMOVE:
-		appPaused = true;
-		resizing = true;
-		timer.Stop();
+		mAppPaused = true;
+		mResizing = true;
+		mTimer.Stop();
 		return 0;
 	case WM_EXITSIZEMOVE:
-		appPaused = false;
-		resizing = false;
-		timer.Start();
+		mAppPaused = false;
+		mResizing = false;
+		mTimer.Start();
 		OnResize();
 		return 0;
 	case WM_MENUCHAR:
@@ -383,7 +383,7 @@ LRESULT DirectXWindow::MessageProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 	case WM_KEYDOWN:
 		if (wParam == VK_ESCAPE)
 		{
-			DestroyWindow(mainWindowHandle);
+			DestroyWindow(mMainWindowHandle);
 		}
 		return 0;
 	case WM_LBUTTONDOWN:
@@ -408,28 +408,28 @@ LRESULT DirectXWindow::MessageProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 
 ID3D12Resource * DirectXWindow::CurrentBackBuffer() const
 {
-	return swapChainBuffer[currentBackBuffer].Get();
+	return mSwapChainBuffer[mCurrentBackBuffer].Get();
 }
 
 float DirectXWindow::AspectRatio()
 {
-	return static_cast<float>(width) / static_cast<float>(height);
+	return static_cast<float>(mWidth) / static_cast<float>(mHeight);
 }
 
 void DirectXWindow::FlushCommandQueue()
 {
-	//advancing the fence value to mark what commands need to be processed
-	currentFence++;
-	//tell the command queue to set up a new fence point 
-	ThrowIfFailed(commandQueue->Signal(fence.Get(), currentFence));
+	//advancing the mFence value to mark what commands need to be processed
+	mCurrentFence++;
+	//tell the command queue to set up a new mFence point 
+	ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mCurrentFence));
 
 	//wait until the gpu has complete all command up until this point
-	if (fence->GetCompletedValue() < currentFence)
+	if (mFence->GetCompletedValue() < mCurrentFence)
 	{
 		auto eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
 
-		//fire an event when gpu hits the fence
-		ThrowIfFailed(fence->SetEventOnCompletion(currentFence, eventHandle));
+		//fire an event when gpu hits the mFence
+		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFence, eventHandle));
 
 		//wait until the event is fired
 		WaitForSingleObject(eventHandle, INFINITE);
@@ -439,42 +439,42 @@ void DirectXWindow::FlushCommandQueue()
 
 void DirectXWindow::OnResize()
 {
-	assert(device);
-	assert(swapChain);
-	assert(commandListAllocator);
+	assert(mDevice);
+	assert(mSwapChain);
+	assert(mCommandListAllocator);
 
 	//flush before changing any resource
 	FlushCommandQueue();
 
-	ThrowIfFailed(commandList->Reset(commandListAllocator.Get(), nullptr));
+	ThrowIfFailed(mCommandList->Reset(mCommandListAllocator.Get(), nullptr));
 
-	for (int i = 0; i < swapChainBufferCount; i++)
+	for (int i = 0; i < SwapChainBufferCount; i++)
 	{
-		swapChainBuffer[i].Reset();
+		mSwapChainBuffer[i].Reset();
 	}
 
-	depthStencilBuffer.Reset();
-	ThrowIfFailed(swapChain->ResizeBuffers(
-		swapChainBufferCount,
-		width,
-		height,
-		backbufferFormat,
+	mDepthStencilBuffer.Reset();
+	ThrowIfFailed(mSwapChain->ResizeBuffers(
+		SwapChainBufferCount,
+		mWidth,
+		mHeight,
+		mBackBufferFormat,
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
 		));
-	currentBackBuffer = 0;
+	mCurrentBackBuffer = 0;
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
-	for (UINT i = 0; i < swapChainBufferCount; i++)
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
+	for (UINT i = 0; i < SwapChainBufferCount; i++)
 	{
-		ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&swapChainBuffer[i])));
-		device->CreateRenderTargetView(swapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
-		rtvHeapHandle.Offset(1, rtvDescriptorSize);
+		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
+		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
+		rtvHeapHandle.Offset(1, mRtvDescriptorSize);
 	}
 
 	CreateDepthStencilView();
-	ThrowIfFailed(commandList->Close());
-	ID3D12CommandList* commandLists[] = { commandList.Get() };
-	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+	ThrowIfFailed(mCommandList->Close());
+	ID3D12CommandList* commandLists[] = { mCommandList.Get() };
+	mCommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
 	FlushCommandQueue();
 

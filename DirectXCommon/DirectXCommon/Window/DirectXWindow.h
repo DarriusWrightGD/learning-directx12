@@ -27,15 +27,15 @@ protected:
 	ENGINE_SHARED D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const
 	{
 		return CD3DX12_CPU_DESCRIPTOR_HANDLE(
-			rtvHeap->GetCPUDescriptorHandleForHeapStart(),
-			currentBackBuffer,
-			rtvDescriptorSize
+			mRtvHeap->GetCPUDescriptorHandleForHeapStart(),
+			mCurrentBackBuffer,
+			mRtvDescriptorSize
 			);
 	}
 
-	ENGINE_SHARED D3D12_CPU_DESCRIPTOR_HANDLE DepthBufferStencilView() const
+	ENGINE_SHARED D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const
 	{
-		return dsvHeap->GetCPUDescriptorHandleForHeapStart();
+		return mDsvHeap->GetCPUDescriptorHandleForHeapStart();
 	}
 
 	ENGINE_SHARED ID3D12Resource* CurrentBackBuffer()const;
@@ -50,52 +50,52 @@ protected:
 	ENGINE_SHARED virtual void OnMouseDown(WPARAM state, int x, int y) {}
 	ENGINE_SHARED virtual void OnMouseMove(WPARAM state, int x, int y) {}
 
-	HWND mainWindowHandle = 0;
-	HINSTANCE applicationHandle = 0;
+	HWND mMainWindowHandle = 0;
+	HINSTANCE mApplicationHandle = 0;
 
-	ComPtr<IDXGIFactory4> factory = nullptr;
-	ComPtr<ID3D12Device> device = nullptr;
-	ComPtr<ID3D12Fence> fence = nullptr;
+	ComPtr<IDXGIFactory4> mFactory = nullptr;
+	ComPtr<ID3D12Device> mDevice = nullptr;
+	ComPtr<ID3D12Fence> mFence = nullptr;
 
-	ComPtr<ID3D12CommandQueue> commandQueue = nullptr;
-	ComPtr<ID3D12GraphicsCommandList> commandList = nullptr;
-	ComPtr<ID3D12CommandAllocator> commandListAllocator = nullptr;
-
-
-	const static int swapChainBufferCount = 2;
-	ComPtr<IDXGISwapChain> swapChain = nullptr;
-	ComPtr<ID3D12Resource> swapChainBuffer[swapChainBufferCount];
-	DXGI_FORMAT backbufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	int currentBackBuffer = 0;
-	UINT64 currentFence = 0;
+	ComPtr<ID3D12CommandQueue> mCommandQueue = nullptr;
+	ComPtr<ID3D12GraphicsCommandList> mCommandList = nullptr;
+	ComPtr<ID3D12CommandAllocator> mCommandListAllocator = nullptr;
 
 
+	const static int SwapChainBufferCount = 2;
+	ComPtr<IDXGISwapChain> mSwapChain = nullptr;
+	ComPtr<ID3D12Resource> mSwapChainBuffer[SwapChainBufferCount];
+	DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	int mCurrentBackBuffer = 0;
+	UINT64 mCurrentFence = 0;
 
-	ComPtr<ID3D12Resource> depthStencilBuffer = nullptr;
-	DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 
-	ComPtr<ID3D12DescriptorHeap> rtvHeap = nullptr;
-	ComPtr<ID3D12DescriptorHeap> dsvHeap = nullptr;
-	UINT rtvDescriptorSize = 0;
-	UINT dsvDescriptorSize = 0;
-	UINT cbvDescriptorSize = 0;
+	ComPtr<ID3D12Resource> mDepthStencilBuffer = nullptr;
+	DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+
+	ComPtr<ID3D12DescriptorHeap> mRtvHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> mDsvHeap = nullptr;
+	UINT mRtvDescriptorSize = 0;
+	UINT mDsvDescriptorSize = 0;
+	UINT mCbvDescriptorSize = 0;
 
 	UINT m4xMsaaQuality;
 
-	bool appPaused = false;
-	bool minimized = false;
-	bool maximized = false;
-	bool resizing = false;
-	bool fullScreen = false;
+	bool mAppPaused = false;
+	bool mMinimized = false;
+	bool mMaximized = false;
+	bool mResizing = false;
+	bool mFullScreen = false;
 
-	RECT scissorRect;
-	D3D12_VIEWPORT viewPort;
-	int width = 1024;
-	int height = 768;
+	RECT mScissorRect;
+	D3D12_VIEWPORT mViewPort;
+	int mWidth = 1024;
+	int mHeight = 768;
 
-	GameTimer timer;
-	std::wstring mainWindowCaption = L"DirectX Window";
+	GameTimer mTimer;
+	std::wstring mMainWindowCaption = L"DirectX Window";
 private:
 	bool InitializeWindow();
 	bool InitializeDirectX();

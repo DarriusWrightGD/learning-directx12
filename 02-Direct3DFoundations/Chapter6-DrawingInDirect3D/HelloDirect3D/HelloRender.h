@@ -30,27 +30,27 @@ private:
 	void BuildBoxGeometry();
 	void BuildPSO();
 
-	ComPtr<ID3D12DescriptorHeap> cbvHeap = nullptr;
-	ComPtr<ID3D12RootSignature> rootSignature = nullptr;
+	ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
+	ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
  
 
-	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
+	D3D12_DESCRIPTOR_HEAP_DESC mCbvHeapDesc;
 
-	std::unique_ptr<UploadBuffer<ObjectConstants>> objectConstantsCB = nullptr;
-	std::unique_ptr<MeshGeometry> boxGeo = nullptr;
+	std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectConstantsCB = nullptr;
+	std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
 
-	std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
-	ComPtr<ID3D12PipelineState> pso = nullptr;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
+	ComPtr<ID3D12PipelineState> mPso = nullptr;
 
-	DirectX::XMFLOAT2 lastMousePosition;
-	DirectX::XMFLOAT4X4 view;
-	DirectX::XMFLOAT4X4 world;
-	DirectX::XMFLOAT4X4 projection;
+	DirectX::XMFLOAT2 mLastMousePosition;
+	DirectX::XMFLOAT4X4 mView;
+	DirectX::XMFLOAT4X4 mWorld;
+	DirectX::XMFLOAT4X4 mProjection;
 	ComPtr<ID3DBlob> mVsByteCode = nullptr;
 	ComPtr<ID3DBlob> mPsByteCode = nullptr;
 
-	float theta = 1.5f * DirectX::XM_PI;
-	float phi = DirectX::XM_PIDIV4;
-	float radius = 15.0f;
+	float mTheta = 1.5f * DirectX::XM_PI;
+	float mPhi = DirectX::XM_PIDIV4;
+	float mRadius = 15.0f;
 };
 

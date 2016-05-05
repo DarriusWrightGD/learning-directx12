@@ -2,6 +2,6 @@
 #include <DirectXMath.h>
 struct ObjectConstants
 {
-	DirectX::XMFLOAT4X4 worldViewProjection;
-	float time;
+	DirectX::XMFLOAT4X4 WorldViewProjection;
+	float Time;
 };

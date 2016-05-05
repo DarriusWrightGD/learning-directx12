@@ -21,8 +21,8 @@ ShapesDemo::~ShapesDemo()
 void ShapesDemo::Init()
 {
 	//reset the command list before using any commands 
-	ThrowIfFailed(commandListAllocator->Reset());
-	ThrowIfFailed(commandList->Reset(commandListAllocator.Get(), nullptr));
+	ThrowIfFailed(mCommandListAllocator->Reset());
+	ThrowIfFailed(mCommandList->Reset(mCommandListAllocator.Get(), nullptr));
 
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
@@ -33,11 +33,11 @@ void ShapesDemo::Init()
 	BuildConstantBuffer();
 	BuildPSO();
 	//close the command list before executing commands 
-	commandList->Close();
+	mCommandList->Close();
 
 	//execute the list of commandlists
-	ID3D12CommandList * commandLists [] = {commandList.Get()};
-	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+	ID3D12CommandList * commandLists [] = {mCommandList.Get()};
+	mCommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
 	//wait until the command queue is empty before proceeding
 	FlushCommandQueue();
@@ -60,11 +60,11 @@ void ShapesDemo::Update(const GameTimer& timer)
 	mCurrentFrameResource = mFrameResources[mCurrentFrameResourceIndex].get();
 
 	//Check if the GPU has finished processing commands up until this point,
-	//if not wait until the GPU has completed commands at this fence point
-	if (mCurrentFrameResource->fence != 0 && fence->GetCompletedValue() < mCurrentFrameResource->fence)
+	//if not wait until the GPU has completed commands at this mFence point
+	if (mCurrentFrameResource->Fence != 0 && mFence->GetCompletedValue() < mCurrentFrameResource->Fence)
 	{
 		HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
-		ThrowIfFailed(fence->SetEventOnCompletion(mCurrentFrameResource->fence, eventHandle));
+		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFrameResource->Fence, eventHandle));
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
 	}
@@ -75,7 +75,7 @@ void ShapesDemo::Update(const GameTimer& timer)
 
 void ShapesDemo::Draw(const GameTimer& tinmer)
 {
-	auto cmdListAllocator = mCurrentFrameResource->commandListAllocator;
+	auto cmdListAllocator = mCurrentFrameResource->CommandListAllocator;
 
 	ThrowIfFailed(cmdListAllocator->Reset());
 
@@ -86,42 +86,42 @@ void ShapesDemo::Draw(const GameTimer& tinmer)
 		pso = mPSOs["opaque_wireframe"].Get();
 	}
 
-	ThrowIfFailed(commandList->Reset(cmdListAllocator.Get(), pso));
+	ThrowIfFailed(mCommandList->Reset(cmdListAllocator.Get(), pso));
 
-	commandList->RSSetViewports(1, &viewPort);
-	commandList->RSSetScissorRects(1, &scissorRect);
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	mCommandList->RSSetViewports(1, &mViewPort);
+	mCommandList->RSSetScissorRects(1, &mScissorRect);
+	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 
-	commandList->ClearDepthStencilView(DepthBufferStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	float color[4] = { 0,0.2,0.6,1 };
-	commandList->ClearRenderTargetView(CurrentBackBufferView(), color, 0, nullptr);
-	commandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthBufferStencilView());
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), color, 0, nullptr);
+	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
 	ID3D12DescriptorHeap * descriptorHeaps[] = { mCbvHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-	commandList->SetGraphicsRootSignature(mRootSignature.Get());
+	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
 	int passCbvIndex = mPassOffset + mCurrentFrameResourceIndex;
 	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
-	passCbvHandle.Offset(passCbvIndex, cbvDescriptorSize);
-	commandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
+	passCbvHandle.Offset(passCbvIndex, mCbvDescriptorSize);
+	mCommandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
 
-	DrawRenderItems(commandList.Get(), mOpaqueRenderItems);
+	DrawRenderItems(mCommandList.Get(), mOpaqueRenderItems);
 
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-	ThrowIfFailed(commandList->Close());
+	ThrowIfFailed(mCommandList->Close());
 
-	ID3D12CommandList * commandLists[] = { commandList.Get() };
-	commandQueue->ExecuteCommandLists(_countof(commandLists),commandLists);
+	ID3D12CommandList * commandLists[] = { mCommandList.Get() };
+	mCommandQueue->ExecuteCommandLists(_countof(commandLists),commandLists);
 
-	ThrowIfFailed(swapChain->Present(0, 0));
-	currentBackBuffer = (currentBackBuffer + 1) % swapChainBufferCount;
+	ThrowIfFailed(mSwapChain->Present(0, 0));
+	mCurrentBackBuffer = (mCurrentBackBuffer + 1) % SwapChainBufferCount;
 
-	mCurrentFrameResource->fence = currentFence++;
-	commandQueue->Signal(fence.Get(), currentFence);
+	mCurrentFrameResource->Fence = mCurrentFence++;
+	mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 
 
 }
@@ -157,7 +157,7 @@ void ShapesDemo::OnMouseDown(WPARAM state, int x, int y)
 	mLastMousePosition.y = static_cast<float>(y);
 	mIsWireFrame = true;
 
-	SetCapture(mainWindowHandle);
+	SetCapture(mMainWindowHandle);
 }
 
 void ShapesDemo::OnMouseUp(WPARAM state, int x, int y)
@@ -189,7 +189,7 @@ void ShapesDemo::BuildDescriptorHeap()
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
 	//create it
-	device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap));
+	mDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap));
 }
 
 void ShapesDemo::BuildConstantBuffer()
@@ -199,7 +199,7 @@ void ShapesDemo::BuildConstantBuffer()
 
 	for (auto frameIndex = 0; frameIndex < mNumberOfFrameResources; frameIndex++)
 	{
-		auto objectCB = mFrameResources[frameIndex]->objectCB->Resource();
+		auto objectCB = mFrameResources[frameIndex]->ObjectCB->Resource();
 		for (auto i = 0u; i < objectCount; i++)
 		{
 			auto cbAddress = objectCB->GetGPUVirtualAddress();
@@ -207,31 +207,31 @@ void ShapesDemo::BuildConstantBuffer()
 
 			int heapIndex = frameIndex*objectCount + i;
 			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, cbvDescriptorSize);
+			handle.Offset(heapIndex, mCbvDescriptorSize);
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
 			cbvDesc.BufferLocation = cbAddress;
 			cbvDesc.SizeInBytes = objectCBByteSize;
 
-			device->CreateConstantBufferView(&cbvDesc, handle);
+			mDevice->CreateConstantBufferView(&cbvDesc, handle);
 		}
 	}
 	
 	UINT passCBByteSize = DxUtil::GetConstantBufferPadding(sizeof(PassConstants));
 	for (auto frameIndex = 0; frameIndex < mNumberOfFrameResources; frameIndex++)
 	{
-		auto passCB = mFrameResources[frameIndex]->passCB->Resource();
+		auto passCB = mFrameResources[frameIndex]->PassCB->Resource();
 
 		auto cbAddress = passCB->GetGPUVirtualAddress();
 
 		int heapIndex = mPassOffset + frameIndex;
 		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-		handle.Offset(heapIndex, cbvDescriptorSize);
+		handle.Offset(heapIndex, mCbvDescriptorSize);
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
 		cbvDesc.BufferLocation = cbAddress;
 		cbvDesc.SizeInBytes = passCBByteSize;
-		device->CreateConstantBufferView(&cbvDesc, handle);
+		mDevice->CreateConstantBufferView(&cbvDesc, handle);
 	}
 }
 
@@ -261,7 +261,7 @@ void ShapesDemo::BuildRootSignature()
 	}
 
 	ThrowIfFailed(hr);
-	ThrowIfFailed(device->CreateRootSignature(0, serializedRootSignature->GetBufferPointer(), serializedRootSignature->GetBufferSize(), IID_PPV_ARGS(mRootSignature.GetAddressOf())));
+	ThrowIfFailed(mDevice->CreateRootSignature(0, serializedRootSignature->GetBufferPointer(), serializedRootSignature->GetBufferSize(), IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 	
 }
 
@@ -340,8 +340,8 @@ void ShapesDemo::BuildGeometry()
 	ThrowIfFailed(D3DCreateBlob(indexBufferByteSize, &geo->IndexBufferCPU));
 	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), indexBufferByteSize);
 
-	geo->VertexBufferGPU = DxUtil::CreateDefaultBuffer(device.Get(), commandList.Get(), vertices.data(), vertexBufferByteSize, geo->VertexBufferUploader);
-	geo->IndexBufferGPU = DxUtil::CreateDefaultBuffer(device.Get(), commandList.Get(), indices.data(), indexBufferByteSize, geo->IndexBufferUploader);
+	geo->VertexBufferGPU = DxUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vertexBufferByteSize, geo->VertexBufferUploader);
+	geo->IndexBufferGPU = DxUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices.data(), indexBufferByteSize, geo->IndexBufferUploader);
 
 	geo->VertexBufferByteSize = vertexBufferByteSize;
 	geo->VertexByteStride = sizeof(BasicVertex);
@@ -383,22 +383,22 @@ void ShapesDemo::BuildPSO()
 	psoDesc.NodeMask = 0;
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
-	psoDesc.DSVFormat = depthStencilFormat;
-	psoDesc.RTVFormats[0] = backbufferFormat;
+	psoDesc.DSVFormat = mDepthStencilFormat;
+	psoDesc.RTVFormats[0] = mBackBufferFormat;
 
-	ThrowIfFailed(device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(mPSOs["opaque"].GetAddressOf())));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(mPSOs["opaque"].GetAddressOf())));
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC wireframePso = psoDesc;
 	
 	wireframePso.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	wireframePso.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	ThrowIfFailed(device->CreateGraphicsPipelineState(&wireframePso, IID_PPV_ARGS(mPSOs["opaque_wireframe"].GetAddressOf())));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&wireframePso, IID_PPV_ARGS(mPSOs["opaque_wireframe"].GetAddressOf())));
 }
 
 void ShapesDemo::BuildFrameResources()
 {
 	for (auto i = 0; i < mNumberOfFrameResources; i++)
 	{
-		mFrameResources.push_back(std::make_unique<FrameResource>(device.Get(), 1, static_cast<UINT>(mAllRenderItems.size())));
+		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1, static_cast<UINT>(mAllRenderItems.size())));
 	}
 }
 
@@ -487,7 +487,7 @@ void ShapesDemo::BuildRenderItems()
 
 void ShapesDemo::UpdateObjectCBs(const GameTimer & timer)
 {
-	auto currentObjectCB = mCurrentFrameResource->objectCB.get();
+	auto currentObjectCB = mCurrentFrameResource->ObjectCB.get();
 	for(auto& renderItem : mAllRenderItems)
 	{
 		if(renderItem->NumberOfFramesDirty > 0)
@@ -523,12 +523,12 @@ void ShapesDemo::UpdateMainPassCB(const GameTimer& timer)
 	mMainPassCB.EyePosition = XMFLOAT3(0, 12, -8);
 	mMainPassCB.NearZ = 1.0f;
 	mMainPassCB.FarZ = 1000.0f;
-	mMainPassCB.RenderTargetSize = XMFLOAT2(static_cast<float>(width), static_cast<float>(height));
-	mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / static_cast<float>(width), 1.0f / static_cast<float>(height));
+	mMainPassCB.RenderTargetSize = XMFLOAT2(static_cast<float>(mWidth), static_cast<float>(mHeight));
+	mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / static_cast<float>(mWidth), 1.0f / static_cast<float>(mHeight));
 	mMainPassCB.TotalTime = timer.TotalTime();
 	mMainPassCB.DeltaTime = timer.DeltaTime();
 
-	auto currentPassCB = mCurrentFrameResource->passCB.get();
+	auto currentPassCB = mCurrentFrameResource->PassCB.get();
 	currentPassCB->CopyData(0, mMainPassCB);
 	
 }
@@ -536,7 +536,7 @@ void ShapesDemo::UpdateMainPassCB(const GameTimer& timer)
 void ShapesDemo::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& renderItems)
 {
 	UINT objectCBByteSize = DxUtil::GetConstantBufferPadding(sizeof(ObjectConstants));
-	auto objectCB = mCurrentFrameResource->objectCB->Resource();
+	auto objectCB = mCurrentFrameResource->ObjectCB->Resource();
 
 	for (auto i = 0u; i < renderItems.size(); i++)
 	{
@@ -547,7 +547,7 @@ void ShapesDemo::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::
 
 		UINT cbvIndex = mCurrentFrameResourceIndex*static_cast<UINT>(mOpaqueRenderItems.size()) + renderItem->ObjectCBIndex;
 		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
-		cbvHandle.Offset(cbvIndex, cbvDescriptorSize);
+		cbvHandle.Offset(cbvIndex, mCbvDescriptorSize);
 
 		cmdList->SetGraphicsRootDescriptorTable(0, cbvHandle);
 		cmdList->DrawIndexedInstanced(renderItem->IndexCount, 1, renderItem->StartIndexLocation, renderItem->BaseVertexLocation, 0);

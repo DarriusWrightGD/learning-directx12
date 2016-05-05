@@ -8,26 +8,26 @@ class UploadBuffer
 {
 public:
 	UploadBuffer(ID3D12Device * device, UINT elementCount, bool isConstantBuffer = false)
-		: isConstantBuffer(isConstantBuffer)
+		: mIsConstantBuffer(isConstantBuffer)
 	{
-		elementByteSize = sizeof(T);
+		mElementByteSize = sizeof(T);
 		if (isConstantBuffer)
 		{
-			elementByteSize = DxUtil::GetConstantBufferPadding(elementByteSize);
+			mElementByteSize = DxUtil::GetConstantBufferPadding(mElementByteSize);
 		}
 
 		ThrowIfFailed(device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(elementByteSize*elementCount),
+			&CD3DX12_RESOURCE_DESC::Buffer(mElementByteSize*elementCount),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
-			IID_PPV_ARGS(&uploadBuffer)));
+			IID_PPV_ARGS(&mUploadBuffer)));
 
-		ThrowIfFailed(uploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mappedData)));
+		ThrowIfFailed(mUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mMappedData)));
 
 
-		//ThrowIfFailed(device->CreateCommittedResource(
+		//ThrowIfFailed(mDevice->CreateCommittedResource(
 		//	&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		//	D3D12_HEAP_FLAG_NONE,
 		//	&CD3DX12_RESOURCE_DESC::Buffer(elementByteSize * elementCount),
@@ -43,24 +43,24 @@ public:
 	UploadBuffer& operator=(const UploadBuffer & buffer) = delete;
 	~UploadBuffer()
 	{
-		if (uploadBuffer != nullptr)
-			uploadBuffer->Unmap(0, nullptr);
+		if (mUploadBuffer != nullptr)
+			mUploadBuffer->Unmap(0, nullptr);
 
-		mappedData = nullptr;
+		mMappedData = nullptr;
 	}
 	ID3D12Resource * Resource() const
 	{
-		return uploadBuffer.Get();
+		return mUploadBuffer.Get();
 	}
 
 	void CopyData(int elementIndex, const T & data)
 	{
-		memcpy(&mappedData[elementIndex*elementByteSize], &data, sizeof(T));
+		memcpy(&mMappedData[elementIndex*mElementByteSize], &data, sizeof(T));
 	}
 private:
-	UINT elementByteSize = 0;
-	bool isConstantBuffer;
-	Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer;
-	BYTE * mappedData = nullptr;
+	UINT mElementByteSize = 0;
+	bool mIsConstantBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> mUploadBuffer;
+	BYTE * mMappedData = nullptr;
 };
 

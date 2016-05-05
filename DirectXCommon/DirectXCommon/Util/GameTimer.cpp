@@ -2,12 +2,12 @@
 #include <Windows.h>
 
 
-GameTimer::GameTimer() : secondsPerCount(0.0), deltaTime(0.0), baseTime(0),
-pausedTime(0), previousTime(0), currentTime(0), stopped(false)
+GameTimer::GameTimer() : mSecondsPerCount(0.0), mDeltaTime(0.0), mBaseTime(0),
+mPausedTime(0), mPreviousTime(0), mCurrentTime(0), mStopped(false)
 {
 	__int64 countsPerSec;
 	QueryPerformanceFrequency((LARGE_INTEGER*)&countsPerSec);
-	secondsPerCount = 1.0 / (double)countsPerSec;
+	mSecondsPerCount = 1.0 / (double)countsPerSec;
 }
 
 
@@ -18,29 +18,29 @@ GameTimer::~GameTimer()
 float GameTimer::TotalTime() const
 {
 
-	if (stopped)
+	if (mStopped)
 	{
-		return (float)(((stopTime - pausedTime) - baseTime)*secondsPerCount);
+		return (float)(((mStopTime - mPausedTime) - mBaseTime)*mSecondsPerCount);
 	}
 	else
 	{
-		return (float)(((currentTime - pausedTime) - baseTime)* secondsPerCount);
+		return (float)(((mCurrentTime - mPausedTime) - mBaseTime)* mSecondsPerCount);
 	}
 }
 
 float GameTimer::DeltaTime() const
 {
-	return (float)deltaTime;
+	return (float)mDeltaTime;
 }
 
 void GameTimer::Reset()
 {
 	__int64 currTime;
 	QueryPerformanceCounter((LARGE_INTEGER*)&currTime);
-	baseTime = currTime;
-	previousTime = currTime;
-	stopTime = 0;
-	stopped = false;
+	mBaseTime = currTime;
+	mPreviousTime = currTime;
+	mStopTime = 0;
+	mStopped = false;
 }
 
 void GameTimer::Start()
@@ -48,46 +48,46 @@ void GameTimer::Start()
 	__int64 startTime;
 	QueryPerformanceCounter((LARGE_INTEGER*)&startTime);
 
-	if (stopped)
+	if (mStopped)
 	{
-		pausedTime += (startTime - stopTime);
-		previousTime = startTime;
+		mPausedTime += (startTime - mStopTime);
+		mPreviousTime = startTime;
 
-		stopTime = 0;
-		stopped = false;
+		mStopTime = 0;
+		mStopped = false;
 	}
 }
 
 void GameTimer::Stop()
 {
-	if (!stopped)
+	if (!mStopped)
 	{
 		__int64 currTime;
 		QueryPerformanceCounter((LARGE_INTEGER*)&currTime);
-		stopTime = currTime;
-		stopped = true;
+		mStopTime = currTime;
+		mStopped = true;
 	}
 }
 
 void GameTimer::Tick()
 {
-	if (stopped)
+	if (mStopped)
 	{
-		deltaTime = 0.0;
+		mDeltaTime = 0.0;
 		return;
 	}
 
 	__int64 currentTickTime;
 	QueryPerformanceCounter((LARGE_INTEGER*)&currentTickTime);
-	currentTime = currentTickTime;
+	mCurrentTime = currentTickTime;
 
-	deltaTime = (currentTime - previousTime)* secondsPerCount;
+	mDeltaTime = (mCurrentTime - mPreviousTime)* mSecondsPerCount;
 
-	previousTime = currentTime;
+	mPreviousTime = mCurrentTime;
 
-	if (deltaTime < 0.0)
+	if (mDeltaTime < 0.0)
 	{
-		deltaTime = 0.0;
+		mDeltaTime = 0.0;
 	}
 
 }

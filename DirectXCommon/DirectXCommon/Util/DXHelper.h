@@ -16,16 +16,16 @@ class DxException
 public:
 	ENGINE_SHARED DxException() = default;
 	ENGINE_SHARED DxException(HRESULT hr, const std::wstring & functionName, const std::wstring & filename, int lineNumber);
-	ENGINE_SHARED std::wstring ToString();
-	ENGINE_SHARED HRESULT GetErrorCode();
-	ENGINE_SHARED std::wstring GetFunctionName();
-	ENGINE_SHARED std::wstring GetFileName();
-	ENGINE_SHARED int GetLineNumber();
+	ENGINE_SHARED std::wstring ToString() const;
+	ENGINE_SHARED HRESULT GetErrorCode() const;
+	ENGINE_SHARED std::wstring GetFunctionName() const;
+	ENGINE_SHARED std::wstring GetFileName() const;
+	ENGINE_SHARED int GetLineNumber() const;
 private:
-	HRESULT errorCode = S_OK;
-	std::wstring functionName;
-	std::wstring fileName;
-	int lineNumber = -1;
+	HRESULT mErrorCode = S_OK;
+	std::wstring mFunctionName;
+	std::wstring mFileName;
+	int mLineNumber = -1;
 };
 
 #ifndef ThrowIfFailed
